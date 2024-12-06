@@ -1,0 +1,136 @@
+---
+title: "R Notebook"
+output: html_notebook
+---
+
+```{r}
+read.csv("C:\\Users\\mikol\\Downloads\\hotel_cancellations_train.csv")
+read.csv("C:\\Users\\mikol\\Downloads\\hotel_cancellations_test.csv")
+install.packages("caret")
+```
+#1
+
+```{r}
+
+train_data <- read.csv("C:\\Users\\mikol\\Downloads\\hotel_cancellations_train.csv")
+
+missing_values <- sum(is.na(train_data))
+missing_values
+
+```
+#3
+```{r}
+canceled_reservations <- subset(train_data, is_cancelled == "Cancelled")
+non_refund_count <- sum(canceled_reservations$deposit_type == "Non Refund")
+non_refund_count
+
+```
+#2
+```{r}
+cancelled_count <- sum(train_data$is_cancelled == "Cancelled")
+cancelled_count
+
+```
+#4
+```{r}
+if(!require(rpart)) install.packages("rpart")
+library(rpart)
+m1 <- rpart(is_cancelled ~ ., data = train_data)
+plot(m1)
+text(m1, use.n = TRUE, cex = 0.8)
+m1$frame$var[1]
+
+```
+#5
+
+
+```{r}
+library(rpart)
+m1 <- rpart(is_cancelled ~ ., data = train_data)
+predictions <- predict(m1, train_data, type = "class")
+accuracy <- sum(predictions == train_data$is_cancelled) / nrow(train_data) * 100
+accuracy
+
+```
+
+
+#6
+```{r}
+predictions_test <- as.factor(predictions_test)
+test_data$is_cancelled <- as.factor(test_data$is_cancelled)
+levels(predictions_test) <- levels(test_data$is_cancelled)
+cm1 <- confusionMatrix(predictions_test, test_data$is_cancelled, positive = "Cancelled")
+print(cm1)
+precision <- cm1$byClass["Pos Pred Value"]
+recall <- cm1$byClass["Sensitivity"]
+f1_score <- 2 * (precision * recall) / (precision + recall)
+f1_score
+
+```
+#7
+```{r}
+
+sensitivity <- cm1$byClass["Sensitivity"]
+sensitivity
+
+```
+
+#8
+```{r}
+cm1$table
+true_positives <- cm1$table["Cancelled", "Cancelled"]
+true_positives
+
+```
+
+#9
+```{r}
+if(!require(vip)) install.packages("vip")
+library(vip)
+vip(m1)
+importance <- as.data.frame(varImp(m1))
+top_3 <- rownames(importance)[order(importance$Overall, decreasing = TRUE)[1:3]]
+top_3
+
+```
+#10
+```{r}
+if(!require(naivebayes)) install.packages("naivebayes")
+library(naivebayes)
+m2 <- naive_bayes(is_cancelled ~ ., data = train_data, laplace = 0)
+m2$prior["Cancelled"]
+
+```
+#11
+```{r}
+print(m2$tables$lead_time)
+likelihood <- m2$tables$lead_time[">=100", "Cancelled"]
+likelihood
+
+
+```
+#12
+```{r}
+predictions_test_nb <- predict(m2, test_data, type = "class")
+accuracy <- sum(predictions_test_nb == test_data$is_cancelled) / nrow(test_data) * 100
+accuracy
+
+```
+
+#13
+```{r}
+
+library(caret)
+predictions_test_nb <- predict(m2, test_data, type = "class")
+cm2 <- confusionMatrix(data = predictions_test_nb, reference = test_data$is_cancelled, positive = "Cancelled", mode = "everything")
+print(cm2)
+false_positives <- cm2$table["Cancelled", "NotCancelled"]
+false_positives
+
+```
+```{r}
+specificity <- cm2$byClass["Specificity"]
+specificity
+
+```
+
